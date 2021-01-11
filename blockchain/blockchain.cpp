@@ -3,7 +3,7 @@
 
 
 void Blockchain::createGenesisBlock(){    
-    chain.push_back(Block(0, 0, "", 0));
+    chain.push_back(Block(0, 0, uint256(0), 0));
 }
 
 Blockchain::Blockchain() 
