@@ -2,36 +2,60 @@
 
 #include "blockchain/block.h"
 #include "blockchain/uint256.h"
+#include "httplib.h"
 
 using namespace std;
 
-int main(){
+int main(int argc, char** argv){
+
+    if(argc != 2){
+        cout<< "need argument to port !!" << endl;
+        return -1;
+    }
+
+    int port = strtol(argv[1], NULL, 10);
+
     cout<< "Start !!" << endl;
 
-    auto block = new Block(0, 1, uint256(0), 1);
-    cout<< hash_to_string(block->hash) << endl;
+    // HTTP
+    httplib::Server svr;
+
+    svr.Get("/hi", [](const httplib::Request &, httplib::Response &res) {
+        res.set_content("Hello World!", "text/plain");
+    });
 
 
-    uint256 difficult = 1;
-    difficult <<= 240;//235
+    svr.Get("/mine", [](const httplib::Request &, httplib::Response &res) {
+        auto block = new Block(0, 1, uint256(0), 1);
+        cout<< hash_to_string(block->hash) << endl;
 
-    auto prevhash = block->hash;
-    for(long index = 1; index < 11; index++){
+        uint256 UINT256_MAX = 0;
+        UINT256_MAX--;
 
-        for(long i = 0; i< 1000'0000; i++)
-        {
-            long timestamp = 1;
+        uint256 difficult = UINT256_MAX >>= 16;
 
-            auto block2 = new Block(index, timestamp, prevhash, i);
-            auto hash = calculateHash(block2);
+        auto prevhash = block->hash;
+        for(long index = 1; index < 11; index++){
 
-            if( hash < difficult){
-                cout<< hash_to_string(block2->hash) << ", " << block2->nonce << endl;
-                prevhash = block2->hash;
-                break;
+            for(long i = 0; i< 1000'0000; i++)
+            {
+                long timestamp = 1;
+
+                auto block2 = new Block(index, timestamp, prevhash, i);
+                auto hash = calculateHash(block2);
+
+                if( hash < difficult){
+                    cout<< hash_to_string(block2->hash) << ", " << block2->nonce << endl;
+                    prevhash = block2->hash;
+                    break;
+                }
             }
         }
-    }
+        res.set_content("Mined!", "text/plain");
+    });
+
+    svr.listen("0.0.0.0", port);
+
     return 0;
 }
 

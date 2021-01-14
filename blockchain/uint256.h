@@ -391,10 +391,7 @@ public:
         s.read((char*)pn, sizeof(pn));
     }
 
-
-    friend class uint160;
     friend class uint256;
-    friend inline int Testuint256AdHoc(std::vector<std::string> vArg);
 };
 
 typedef base_uint<256> base_uint256;
