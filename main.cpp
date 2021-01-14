@@ -3,31 +3,37 @@
 #include "blockchain/block.h"
 #include "blockchain/uint256.h"
 #include "httplib.h"
+#include "rapidjson/rapidjson.h"
 
 using namespace std;
 
+bool checkPort(int port);
+
+int port = 8080;
+
 int main(int argc, char** argv){
 
-    if(argc != 2){
-        cout<< "need argument to port !!" << endl;
-        return -1;
-    }
+    // if(argc != 2){
+    //     cout<< "need argument to port !!" << endl;
+    //     return -1;
+    // }
 
-    int port = strtol(argv[1], NULL, 10);
+    // int port = strtol(argv[1], NULL, 10);
 
+    while(checkPort(port) == true) port++;
     cout<< "Start !!" << endl;
 
     // HTTP
     httplib::Server svr;
 
-    svr.Get("/hi", [](const httplib::Request &, httplib::Response &res) {
-        res.set_content("Hello World!", "text/plain");
+    svr.Get("/hi", [](const httplib::Request &req, httplib::Response &res) {
+        res.set_content("Hello World! : " + to_string(port), "text/plain");
     });
 
 
     svr.Get("/mine", [](const httplib::Request &, httplib::Response &res) {
         auto block = new Block(0, 1, uint256(0), 1);
-        cout<< hash_to_string(block->hash) << endl;
+        cout<< block->GetJSON() << endl;
 
         uint256 UINT256_MAX = 0;
         UINT256_MAX--;
@@ -45,7 +51,7 @@ int main(int argc, char** argv){
                 auto hash = calculateHash(block2);
 
                 if( hash < difficult){
-                    cout<< hash_to_string(block2->hash) << ", " << block2->nonce << endl;
+                    cout<< block2->GetJSON() << endl;
                     prevhash = block2->hash;
                     break;
                 }
@@ -54,9 +60,27 @@ int main(int argc, char** argv){
         res.set_content("Mined!", "text/plain");
     });
 
+
+    cout<< "Listen : " << port << endl;
     svr.listen("0.0.0.0", port);
 
     return 0;
+}
+
+bool checkPort(int port){
+    httplib::Client cli("localhost", port);
+
+    if (auto res = cli.Get("/hi")) {
+        if (res->status == 200) {
+            cout << res->body << std::endl;
+        }
+    } else {
+        auto err = res.error();
+        cout << err <<endl;
+        return false;
+    }
+
+    return true;
 }
 
 /*

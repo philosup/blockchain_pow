@@ -5,8 +5,11 @@
 #include <cstring>
 #include "sha256.hpp"
 #include "uint256.h"
+#include "../rapidjson/prettywriter.h" // for stringify JSON
+#include "../rapidjson/stringbuffer.h"
 
 using namespace std;
+using namespace rapidjson;
 
 class Block;
 uint256 calculateHash(const Block* block);
@@ -33,6 +36,37 @@ class Block{
         this->prevhash = _prevhash;
         this->nonce = _nonce;
         this->hash = calculateHash(this);
+    }
+
+    template <typename Writer>
+    void Serialize(Writer& writer) const {
+        writer.StartObject();
+
+        // This base class just write out name-value pairs, without wrapping within an object.
+        writer.String("index");
+        writer.Int64(index);
+
+        writer.String("timestamp");
+        writer.Int64(timestamp);
+
+        writer.String("prevhash");
+        writer.String(hash_to_string(prevhash));
+
+        writer.String("nonce");
+        writer.Int64(nonce);
+
+        writer.String("hash");
+        writer.String(hash_to_string(hash));
+
+        writer.EndObject();
+    }    
+
+    string GetJSON(){
+        StringBuffer buffer;
+        // PrettyWriter<StringBuffer> writer(buffer);
+        Writer<StringBuffer> writer(buffer);
+        Serialize(writer);
+        return buffer.GetString();
     }
 };
 
