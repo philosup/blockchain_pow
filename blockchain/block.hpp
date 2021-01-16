@@ -7,12 +7,14 @@
 #include "uint256.h"
 #include "../rapidjson/prettywriter.h" // for stringify JSON
 #include "../rapidjson/stringbuffer.h"
+#include "../rapidjson/document.h"
 
 using namespace std;
 using namespace rapidjson;
 
 class Block;
-uint256 calculateHash(const Block* block);
+uint256 calculateHash( Block* const block);
+
 string hash_to_string(const uint256& hash){
     char buf[2*SHA256::DIGEST_SIZE+1];
     buf[2*SHA256::DIGEST_SIZE] = 0;
@@ -36,6 +38,17 @@ class Block{
         this->prevhash = _prevhash;
         this->nonce = _nonce;
         this->hash = calculateHash(this);
+    }
+
+    Block(string jsonStr){
+        Document d;
+        d.Parse(jsonStr.c_str());
+
+        index = d["index"].GetInt64();
+        timestamp = d["timestamp"].GetInt64();
+        prevhash = uint256(d["prevhash"].GetString());
+        nonce = d["nonce"].GetInt64();
+        hash = uint256(d["hash"].GetString());
     }
 
     template <typename Writer>
@@ -71,7 +84,7 @@ class Block{
 };
 
 
-uint256 calculateHash(const Block* block){
+uint256 calculateHash( Block* const block){
     uint256 digest;
 
     SHA256 ctx;

@@ -1,15 +1,23 @@
 #include <iostream>
 
-#include "blockchain/block.h"
+#include "blockchain/block.hpp"
+#include "blockchain/blockchain.hpp"
 #include "blockchain/uint256.h"
 #include "httplib.h"
 #include "rapidjson/rapidjson.h"
+#include "rapidjson/reader.h"
 
 using namespace std;
 
 bool checkPort(int port);
+void addBlock(int port, Block& block);
+void mine(int port, int difficulty, int begin, int end);
 
 int port = 8080;
+Blockchain chain;
+
+vector<int> node_ports;
+
 
 int main(int argc, char** argv){
 
@@ -20,7 +28,9 @@ int main(int argc, char** argv){
 
     // int port = strtol(argv[1], NULL, 10);
 
-    while(checkPort(port) == true) port++;
+    while(checkPort(port) == true) {
+        node_ports.push_back(port++);
+    }
     cout<< "Start !!" << endl;
 
     // HTTP
@@ -30,36 +40,154 @@ int main(int argc, char** argv){
         res.set_content("Hello World! : " + to_string(port), "text/plain");
     });
 
+    svr.Post("/node", [](const httplib::Request &req, httplib::Response &res) {
 
-    svr.Get("/mine", [](const httplib::Request &, httplib::Response &res) {
-        auto block = new Block(0, 1, uint256(0), 1);
-        cout<< block->GetJSON() << endl;
+        Document d;
+        d.Parse(req.body);
+
+        if(d.HasParseError()){
+            res.set_content("invalid json format", "text/plain");
+            return;
+        }
+
+        if(d.HasMember("port") == false){
+            res.set_content("required 'port' field", "text/plain");
+            return;
+        }
+
+        int node_port = d["port"].GetInt();
+
+        node_ports.push_back(node_port);
+        cout<<"add port : "<< node_port <<endl;
+        res.set_content("add port : " + to_string(node_port), "text/plain");
+    });
+
+
+    svr.Post("/mine", [](const httplib::Request &req, httplib::Response &res) {
+        int diff = 16;
+        long begin = 0;
+        long end = 1000'0000;
+
+        Document d;
+        d.Parse(req.body);
+
+        if(d.HasParseError() == false)
+        {
+            if(d.HasMember("difficulty")){
+                Value& v = d["difficulty"];
+                diff = v.GetInt();
+                cout<<"set difficulty : "<< diff <<endl;
+            }
+            else
+                cout<<"difficulty is not a member"<<endl;
+
+            if(d.HasMember("begin") && d.HasMember("end")){
+                begin = d["begin"].GetInt64();
+                end = d["end"].GetInt64();
+            }
+            else{
+                cout<<"properties(begin/end) are not setted"<<endl;
+            }
+        }
+
+        auto block = chain.getLastBlock();
+        cout<< block.GetJSON() << endl;
 
         uint256 UINT256_MAX = 0;
         UINT256_MAX--;
 
-        uint256 difficult = UINT256_MAX >>= 16;
+        uint256 difficult = UINT256_MAX >>= diff;
 
-        auto prevhash = block->hash;
-        for(long index = 1; index < 11; index++){
+        auto prevhash = block.hash;
+        auto index = block.index + 1;
+        long timestamp = diff;
+        for(long i = begin; i< end; i++){
+            auto block2 = Block(index, timestamp, prevhash, i);
+            auto hash = calculateHash(&block2);
 
-            for(long i = 0; i< 1000'0000; i++)
-            {
-                long timestamp = 1;
+            if( hash < difficult){
+                // cout<< block2.GetJSON() << endl;
+                prevhash = block2.hash;
 
-                auto block2 = new Block(index, timestamp, prevhash, i);
-                auto hash = calculateHash(block2);
-
-                if( hash < difficult){
-                    cout<< block2->GetJSON() << endl;
-                    prevhash = block2->hash;
-                    break;
+                addBlock(port, block2);
+                //TODO: broadcast to other nodes
+                for(auto nPort : node_ports){
+                    addBlock(nPort, block2);
                 }
+                break;
+            }
+            if(chain.getLastBlock().index != index -1)
+            {
+                break;
             }
         }
-        res.set_content("Mined!", "text/plain");
+        res.set_content(chain.GetJSON(), "application/json");
     });
 
+
+    svr.Post("/mine_all", [](const httplib::Request &req, httplib::Response &res) {
+        int diff = 16;
+        long begin = 0;
+        long end = 1000'0000;
+
+        Document d;
+        d.Parse(req.body);
+
+        if(d.HasParseError() == false)
+        {
+            if(d.HasMember("difficulty")){
+                Value& v = d["difficulty"];
+                diff = v.GetInt();
+                cout<<"set difficulty : "<< diff <<endl;
+            }
+            else
+                cout<<"difficulty is not a member"<<endl;
+
+            if(d.HasMember("begin") && d.HasMember("end")){
+                begin = d["begin"].GetInt64();
+                end = d["end"].GetInt64();
+            }
+            else{
+                cout<<"properties(begin/end) are not setted"<<endl;
+            }
+        }
+
+
+        thread t(mine, port, diff, begin, end);
+        t.detach();
+        auto range = end - begin;
+        for(auto nPort : node_ports){
+            begin = end;
+            end = begin + range;
+            thread t(mine, port, diff, begin, end);
+            t.detach();
+        }
+
+        res.set_content("start mining !!!","text/plain");
+    });
+
+    svr.Post("/block", [](const httplib::Request &req, httplib::Response &res) {
+        cout<<req.body<<endl;
+        auto block = Block(req.body);
+
+        chain.addBlock(block);
+        //todo: validation
+        res.set_content(block.GetJSON(), "application/json");
+    });
+
+    svr.Post("/exit", [](const httplib::Request &req, httplib::Response &res) {
+        res.set_content("exit", "text/plain");
+        exit(0);
+    });
+
+
+    for(auto nPort : node_ports){
+        httplib::Client cli("localhost", nPort);
+
+        char param[100];
+        sprintf(param, "{\"port\":%d}", port);
+        cli.Post("/node", param, "application/json");
+    }
 
     cout<< "Listen : " << port << endl;
     svr.listen("0.0.0.0", port);
@@ -83,17 +211,19 @@ bool checkPort(int port){
     return true;
 }
 
-/*
-Start !!
-307593ad9aa3ee5045094826ff828f3f9311f221eae6714c892a28b393e16161
-000002069abe95924dd2afb969fd126f6b39deee162bf5ea50da6c1a04a3a2c7, 1126881
-000005cbb73f12f6271027ffe884d9b26712e118f48a03dee70aa552d65eaa72, 233490
-0000041468c1f7294ac954e921e021198ab3c29b896818f570add618deb37916, 149770
-00000639c5beef17ebb60718b57725658050b6df77cd9b22d2457c4b023bcf7d, 1344099
-0000065ff2b3e8c4e823f9642615d8bd2ee1f2002b4c8b8c192fab8288fdbf72, 470274
-000003fa8bda3193cf0d527bba516b2d2ac477d1b1db69ca32718163da1c7b62, 1492262
-000004f7ec21351242ce17c8f08cdbb84c42d060c22a2976414bc3b83b43105d, 1728749
-0000003d3a3be370dabb2378b68f4328192deb924c7fed320f87432a56ac37f0, 898725
-000006a1edf5df4d9c234d93f7999c9255c3cf3948d0b1a15be21becdc530ee6, 2736228
-0000002d631bc220f929bb6a66aa1a1ec5fc11c5182c884f7ba3558e3dd98b70, 2087979
-*/
+void addBlock(int _port, Block& block){
+    httplib::Client cli("localhost", _port);
+
+    auto res = cli.Post("/block", block.GetJSON().c_str(), "application/json");
+}
+
+void mine(int _port, int difficulty, int begin, int end){
+
+    httplib::Client cli("localhost", _port);
+
+    char param[200];
+
+    sprintf(param, "{\"difficulty\":%d,\"begin\":%d,\"end\":%d}", difficulty, begin, end);
+
+    auto res = cli.Post("/mine", param, "application/json");
+}
