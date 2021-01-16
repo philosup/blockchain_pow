@@ -129,7 +129,7 @@ void HttpServerController::PostMine(const httplib::Request& req, httplib::Respon
     }
 
     auto block = chain.getLastBlock();
-    cout << "start mining : " << block.index<<", "<<port << endl;
+    cout << "start mining : " << block.index<<", "<<port <<", "<<begin<<"~"<<end<<endl;
 
     uint256 UINT256_MAX = 0;
     UINT256_MAX--;
@@ -145,6 +145,7 @@ void HttpServerController::PostMine(const httplib::Request& req, httplib::Respon
 
         if (hash < difficult) {
             cout <<"mined : " << port << ", " << i << endl;
+            cout <<block2.GetJSON()<<endl;
             prevhash = block2.hash;
 
             AddBlock(port, block2);
@@ -198,7 +199,7 @@ void HttpServerController::PostMineAll(const httplib::Request& req, httplib::Res
 }
 
 void HttpServerController::PostBlock(const httplib::Request& req, httplib::Response& res) {
-    cout << req.body << endl;
+    // cout << req.body << endl;
     auto block = Block(req.body);
 
     chain.addBlock(block);

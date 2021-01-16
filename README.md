@@ -46,4 +46,68 @@ worker간 통신은 프로세스 간 통신이나 소켓 통신 등 자유롭게
 - rapidjson - https://github.com/Tencent/rapidjson/
 
 
-## 
+## 컴파일 및 실행
+
+실행할때 마다 8080포트 부터 1씩 증가하면서 포트 셋팅하도록 설정되어 있습니다.
+
+>g++ -g main.cpp -o main -lpthread
+
+> ./start_server.sh
+
+> ./stop_server.sh
+
+
+- 경쟁적 채굴 시작
+> curl -d '{"difficulty":19, "begin":0, "end":10000000}' -H "Content-Type: application/json" -X POST http://localhost:8080/mine_all
+
+- 종료
+> curl -d '' -H "Content-Type: application/json" -X POST http://localhost:8080/exit
+
+> pkill main
+
+
+
+```sh
+./start_server.sh
+2
+Http Server Start !!
+Listen : 8080
+Hello World! : 8080
+2
+Http Server Start !!
+add port : 8081
+Listen : 8081
+Hello World! : 8080
+Hello World! : 8081
+2
+Http Server Start !!
+add port : 8082
+add port : 8082
+Listen : 8082
+set difficulty : 19
+start mining !!!start mining : 0, 8081, 10000000~20000000
+start mining : 0, 8080, 0~10000000
+start mining : 0, 8082, 20000000~30000000
+mined : 8082, 20014908
+{"index":1,"timestamp":19,"prevhash":"a28048d4caf12f50c924a4dc7239b3f3fee68c1582acdab683f91cc7dd232f56","nonce":20014908,"hash":"0000167fbfe42a5b344786b905198c9a8b19d528b3d8fab9a0d43b0f2a6e9cb1"}
+start mining : 1, 8080, 10000000~20000000
+start mining : 1, 8081, 20000000~30000000
+start mining : 1, 8082, 0~10000000
+mined : 8082, 70125
+{"index":2,"timestamp":19,"prevhash":"0000167fbfe42a5b344786b905198c9a8b19d528b3d8fab9a0d43b0f2a6e9cb1","nonce":70125,"hash":"0000143bac7856a1a2dd1d251165b24cb9a0b82f84523833c36cfaf87c44c8c0"}
+start mining : 2, 8082, 0~10000000
+start mining : 2, 8080, 10000000~20000000
+start mining : 2, 8081, 20000000~30000000
+mined : 8082, 207757
+{"index":3,"timestamp":19,"prevhash":"0000143bac7856a1a2dd1d251165b24cb9a0b82f84523833c36cfaf87c44c8c0","nonce":207757,"hash":"00001ecf5d37baff1927ea4566f2bf77895db5a1c7984c4aac31236dc12cb19f"}
+start mining : 3, 8082, 0~10000000
+start mining : 3, 8081, 20000000~30000000
+start mining : 3, 8080, 10000000~20000000
+mined : 8081, 20062369
+{"index":4,"timestamp":19,"prevhash":"00001ecf5d37baff1927ea4566f2bf77895db5a1c7984c4aac31236dc12cb19f","nonce":20062369,"hash":"00000cb9b45412fca08a0912df3ccd21215b945ab593dc659eeb1585a1a3b5fc"}
+start mining : 4, 8081, 0~10000000
+start mining : 4, 8080, 10000000~20000000
+start mining : 4, 8082, 20000000~30000000
+mined : 8080, 10344968
+{"index":5,"timestamp":19,"prevhash":"00000cb9b45412fca08a0912df3ccd21215b945ab593dc659eeb1585a1a3b5fc","nonce":10344968,"hash":"000005151e71806b163b06ba524a1b9d6e4ceb0a7f17c97e359df503074431f0"}
+```
