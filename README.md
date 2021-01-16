@@ -25,15 +25,25 @@ worker간 통신은 프로세스 간 통신이나 소켓 통신 등 자유롭게
   - C/C++ Themes
 
 - C++ - g++ (Ubuntu 9.3.0-17ubuntu1~20.04) 9.3.0
-- OpenSSL 1.1.1f  31 Mar 2020
-    > sudo apt-get install libssl-dev openssl
-
-- docker
 
 ## 작업내역
 - 블록 클래스
 - 블록체인 클래스 
 - 해쉬
 - 난위도
+
+### 변경
+- http서버 방식으로 동일 실행파일로 다른 포트 연결하는 방식으로
+  - 여러 이유로 시간 투자의 어려움이 있어 빨리 구현하는 방향으로 선회.
+
+### 추후
 - 노드 - 마이닝, 네트워크, 검증
 - 도커 테스트
+- gRPC or p2p
+
+## 라이브러리
+- httplib - https://github.com/yhirose/cpp-httplib
+- rapidjson - https://github.com/Tencent/rapidjson/
+
+
+## 
