@@ -239,7 +239,7 @@ void HttpServerController::_Exit()
     }
 }
 bool HttpServerController::CheckPort(int port) {
-    httplib::Client cli("localhost", port);
+    httplib::Client cli(host, port);
 
     if (auto res = cli.Get("/hi")) {
         if (res->status == 200) {
@@ -256,7 +256,7 @@ bool HttpServerController::CheckPort(int port) {
 }
 void HttpServerController::MineByPort(int _port, int difficulty, int begin, int end) {
 
-    httplib::Client cli("localhost", _port);
+    httplib::Client cli(host, _port);
 
     char param[200];
 
@@ -265,7 +265,7 @@ void HttpServerController::MineByPort(int _port, int difficulty, int begin, int 
     auto res = cli.Post("/mine", param, "application/json");
 }
 void HttpServerController::AddBlock(int _port, Block& block) {
-    httplib::Client cli("localhost", _port);
+    httplib::Client cli(host, _port);
 
     auto res = cli.Post("/block", block.GetJSON().c_str(), "application/json");
 }

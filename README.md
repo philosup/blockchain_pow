@@ -42,6 +42,8 @@ worker간 통신은 프로세스 간 통신이나 소켓 통신 등 자유롭게
 - gRPC or p2p
 
 ## 라이브러리
+- sha256 - http://www.zedwood.com/article/cpp-sha256-function
+- uint256 - bitcoin uint256
 - httplib - https://github.com/yhirose/cpp-httplib
 - rapidjson - https://github.com/Tencent/rapidjson/
 
