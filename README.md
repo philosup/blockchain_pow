@@ -69,6 +69,17 @@ worker간 통신은 프로세스 간 통신이나 소켓 통신 등 자유롭게
 
 
 
+## 도커
+
+혹시 컴파일이나 실행이 안되는 경우를 대비 하여 도커 이미지를 올려두었습니다.
+
+> docker pull philosup/blockchainpow:1
+
+> docker run -it philosup/blockchainpow:1 /bin/bash
+
+> ./start_server.sh
+
+
 ```sh
 ./start_server.sh
 2
